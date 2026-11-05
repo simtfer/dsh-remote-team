@@ -39,7 +39,11 @@ The plugin has **zero DSH runtime dependencies** — everything arrives through 
 npm test              # 29 mock-ctx unit tests
 npm run check         # manifest, exports, patch consistency, JS syntax
 npm run integration   # real Cordis Context + real ToolRuntime mounting this bundle
+npm run verify:link   # real WebSocket protocol against a running agent (+ wss policy)
+npm run verify:vm     # cross-machine check through a reverse TCP tunnel
 ```
+
+`verify:link` connects to an already-running `dsh-remote-agent` and runs one real command (`hello`/`welcome`/`spawn`/`stdout`/`exit`); plain `ws://` is refused off-loopback. `verify:vm` drives the agent inside a VirtualBox Windows guest from a host-side WebSocket client — on 2026-11-05 it returned `node -v → v22.22.2`, `hostname → Win11-Test` (host: `tang`) and `win32|x64|Win11-Test`, all with `platform=windows` and `exit:0`. The guest firewall blocked inbound traffic with no elevation available, so the guest dials out to the host instead: **a development-only reverse tunnel, not the production path** (production uses `install.ps1` + `wss://`). Credentials come from environment variables, preferably `DSH_VM_PASSWORD_FILE`.
 
 `npm run integration` is the important one: it proves the bundle actually loads into a DSH profile — all ten tools pass `ToolRegistry.register()`'s JSON-schema validation, the `inject` list resolves, a read-only call works, and disposal unregisters everything. Point it at a checkout with `DSH_REPO=/path/to/deepseek-harness` or a positional argument.
 

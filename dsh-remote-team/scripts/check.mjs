@@ -58,7 +58,7 @@ const jsFiles = [
   ...readdirSync(join(root, 'src')).filter((name) => name.endsWith('.js')).map((name) => join('src', name)),
   ...readdirSync(join(root, 'tests')).filter((name) => name.endsWith('.js')).map((name) => join('tests', name)),
   join('remote-agent', 'wss-proxy.js'),
-  join('scripts', 'check.mjs'),
+  ...readdirSync(join(root, 'scripts')).filter((name) => name.endsWith('.mjs')).map((name) => join('scripts', name)),
 ]
 for (const file of jsFiles) {
   try {

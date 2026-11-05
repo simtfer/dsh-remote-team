@@ -115,17 +115,28 @@ dsh-remote-agent --host 127.0.0.1 --port 8788 --token <token> --allow pi,node
 ```sh
 cd dsh-remote-team
 npm test              # 29 个 node:test 用例，mock context
-npm run check         # 清单、exports、patch 一致性与全部 .js 语法检查
+npm run check         # 清单、exports、patch 一致性与全部 JS 语法检查
 npm run integration   # 真实 Cordis Context + 真实 ToolRuntime 装载本插件
+npm run verify:link   # 连一台已运行的 agent，跑一条真实命令
+npm run verify:vm     # VirtualBox 跨机验证（反向隧道，见下）
 ```
 
-三档验证各管一段，缺一不可：
+各档验证各管一段：
 
 | 命令 | 验证什么 | 需要什么 |
 |---|---|---|
 | `npm test` | 派发、路由、并发、取消、断线不重放、队友绑定 | 只要 Node ≥ 22.19 |
 | `npm run integration` | **插件能否真的装进 DSH**：10 个工具通过 `register()` 的 schema 校验、inject 解析、只读调用、dispose 撤销 | DSH 仓库的 `lib/` 产物与 `node_modules` 可读；可用 `DSH_REPO` 或位置参数指定路径 |
 | 上游 `vitest` | 远程链路 M1：真实 `dsh-remote-agent` + Pi JSONL 往返、allowlist 拒绝、参数校验 | 完整 DSH 开发环境 |
+| `npm run verify:link` | 真实 WebSocket 协议帧（`hello` / `welcome` / `spawn` / `stdout` / `exit`）与 `wss` 策略 | 一台已运行 `dsh-remote-agent` 的机器 + token |
+| `npm run verify:vm` | **跨机执行**：宿主的 WebSocket 客户端驱动 VM 内的 agent 跑真实 Windows 命令 | VirtualBox 客户机 + 环境变量（凭据不落盘） |
+
+`verify:link` 用法（非回环地址必须是 `wss://`，明文 `ws://` 直接拒绝；也支持 `DSH_REMOTE_*` 环境变量）：
+
+```sh
+npm run verify:link -- --url wss://dev-win:8787 --token "$TOKEN" \
+  --command pi --args=--version --cwd 'D:\work\repo'
+```
 
 ```sh
 cd D:/code/github/deepseek-harness
@@ -141,6 +152,34 @@ cd D:/code/github/deepseek-harness
 > ```
 >
 > 修复后 15/15 上游测试通过。另外 vitest 4 不支持 `--reporter=basic`，不要加这个参数。
+
+### 真机跨机验证（2026-11-05，无需模型凭据）
+
+在独立 Windows VM（`Win11-Test`）上，用 `npm run verify:vm` 得到：
+
+```
+{"label":"node -v","platform":"windows","stdout":"v22.22.2","final":{"type":"exit","code":0}}
+{"label":"hostname","platform":"windows","stdout":"Win11-Test","final":{"type":"exit","code":0}}
+{"label":"platform probe","platform":"windows","stdout":"win32|x64|Win11-Test","final":{"type":"exit","code":0}}
+host hostname = tang
+ALL COMMANDS OK = true / EXECUTED ON GUEST (hostname differs) = true
+```
+
+`hostname` 返回 VM 名、宿主是另一台机器，这是命令确实落在远端执行的硬证据；三条命令全部 `platform=windows` + `exit:0`。
+
+**为什么用反向隧道**：VM 的 Windows 防火墙三个配置文件全部启用，测试账户虽在管理员组，但加规则要 UAC 交互（本机安全策略禁止借道脚本宿主），所以 host→guest 入站被拦 —— TCP 能握手、数据全丢；而 guest 主动外连是放行的（实测 `10.0.2.2`、`192.168.56.1`、宿主 LAN IP 均 `CONNECT OK`）。`scripts/verify-cross-machine.mjs` 让 VM 内的 relay-client 主动连宿主，宿主把本地 WebSocket 客户端的字节流经隧道转发到 VM 的 `127.0.0.1:8787`。**这只是开发期绕行，不是生产路径**；生产仍用 `install.ps1` 配好入站规则后走 `wss://`。
+
+被控端部署要点（本次实测）：
+
+| 项 | 结论 |
+|---|---|
+| 打包 | `dsh-remote-agent` 用 esbuild 打成 137.6 KB 单文件即可，VM 只需 `node`。必须用 `--format=esm` + `--banner:js='import { createRequire as __cr } from "node:module"; const require = __cr(import.meta.url);'`，否则 `ws`（CJS）的动态 `require` 会失败 |
+| 拷贝 | `guestcontrol copyto --target-directory` **必须以反斜杠结尾**（`C:\dsh\`），否则 VBox 把目录当目标文件报「already exists and is a directory」 |
+| 常驻 | 用 `guestcontrol start`（异步）而非 `run`；被控端要 `--host 0.0.0.0` 才能让 NAT 流量进来（默认只绑回环） |
+| 白名单 | `decidePolicy()` 对绝对路径取末段并去掉 `.exe`，所以 VM 里的 Node 不必进 PATH，直接传 `C:\dsh\...\node.exe` 即可命中 `node` |
+| cwd | spawn 的 `cwd` 必须是 **VM 内的**绝对路径且存在（如 `C:\dsh`） |
+
+验证脚本的所有凭据走环境变量，优先 `DSH_VM_PASSWORD_FILE`（VBox 的 `--passwordfile`），不要把密码写进命令行或仓库。需要的变量见脚本头部注释。
 
 ## 目录
 
@@ -160,4 +199,5 @@ src/tools.js           10 个模型可见工具
 presets/               可编辑的队友 persona
 remote-agent/          wss-proxy、install.ps1、TLS 说明
 tests/                 node:test 自测（mock ctx）
+scripts/               check / integration / verify-link / verify-cross-machine
 ```
