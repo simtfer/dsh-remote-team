@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "远程智能体团队",
+    "description": "用 DSH 内置 agent-team 调度其他 Windows 电脑上的 Harness（Pi coding agent）执行任务"
+  }
+}

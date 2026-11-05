@@ -1,0 +1,33 @@
+# WorkBuddy 本地会话数据（记忆、日志、临时状态）——保留在本地，不入库
+.workbuddy/
+
+# 依赖与构建产物
+node_modules/
+*.tsbuildinfo
+dist/
+build/
+
+# 运行时生成的日志与任务记录
+*.log
+runs.jsonl
+runs/
+*.tmp
+
+# 密钥与凭据：install.ps1 生成的自签 CA、一机一证书、token 等
+# 这些文件每台机器现场生成，绝不入库
+*.key
+*.pem
+*.pfx
+*.p12
+*.crt
+*.cer
+token*
+.env
+.env.*
+!.env.example
+
+# 编辑器 / 系统
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

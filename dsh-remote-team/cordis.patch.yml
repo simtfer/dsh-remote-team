@@ -1,0 +1,73 @@
+# dsh-remote-team bundle patch.
+#
+# BEFORE INSTALLING: the three @deepseek-ai/dsh-remote* packages and the
+# remote-enabled dsh-subagent-pi currently live on the
+# feat/remote-harness-management branch and are NOT published to npm.
+# Link them into the profile first (see README.zh.md "前置依赖").
+#
+# Tokens never go here: use ${REMOTE_AGENT_TOKEN_*} environment references.
+# Every non-loopback URL must be wss:// (the plugin validates this at startup).
+# On the control host set NODE_EXTRA_CA_CERTS to the generated CA PEM before
+# starting dsh, so Node's global WebSocket trusts the plugin wss-proxy.
+
+- insert:
+    # 1) Capability seam: ctx.remoteExec. Must be available before providers load.
+    - id: remote
+      name: '@deepseek-ai/dsh-remote'
+
+    # 2) WebSocket transport provider, one row per deployment.
+    - id: remote-client
+      name: '@deepseek-ai/dsh-remote-client'
+      config:
+        machines:
+          - id: dev-win
+            name: 'Development Windows'
+            url: 'wss://192.168.1.20:8787'
+            token: '${REMOTE_AGENT_TOKEN_DEV_WIN}'
+          - id: build-win
+            name: 'Build Windows'
+            url: 'wss://192.168.1.21:8787'
+            token: '${REMOTE_AGENT_TOKEN_BUILD_WIN}'
+
+    # 3) One Pi provider instance PER MACHINE. providerName must be unique.
+    #    --approve is required: Pi cannot show project-trust prompts in print/JSON mode.
+    - id: subagent-pi-dev-win
+      name: '@deepseek-ai/dsh-subagent-pi'
+      config:
+        providerName: 'pi@dev-win'
+        mode: remote
+        machine: dev-win
+        command: pi
+        args: ['--model', 'sonnet', '--approve']
+    - id: subagent-pi-build-win
+      name: '@deepseek-ai/dsh-subagent-pi'
+      config:
+        providerName: 'pi@build-win'
+        mode: remote
+        machine: build-win
+        command: pi
+        args: ['--model', 'sonnet', '--approve']
+
+    # 4) The bundle itself. Keep ids/providers/cwd in sync with the rows above.
+    - id: remote-team
+      name: 'dsh-remote-team'
+      config:
+        teamProvider: spawn
+        maxParallel: 4
+        machines:
+          - id: dev-win
+            name: 'Development Windows'
+            provider: 'pi@dev-win'
+            url: 'wss://192.168.1.20:8787'
+            cwd: 'D:\work\repo'
+            tags: ['dev', 'windows']
+            capabilities: ['pi', 'node']
+            maxConcurrentRuns: 2
+          - id: build-win
+            name: 'Build Windows'
+            provider: 'pi@build-win'
+            url: 'wss://192.168.1.21:8787'
+            cwd: 'D:\build\repo'
+            tags: ['build', 'windows']
+            capabilities: ['pi', 'node']
+            maxConcurrentRuns: 1

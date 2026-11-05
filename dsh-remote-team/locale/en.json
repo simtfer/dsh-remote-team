@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Remote Agent Team",
+    "description": "Dispatch tasks to harnesses (Pi coding agent) on other Windows machines through DSH's built-in agent-team"
+  }
+}

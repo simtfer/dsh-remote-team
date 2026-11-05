@@ -1,0 +1,46 @@
+{
+  "name": "dsh-remote-team",
+  "version": "0.1.0",
+  "description": "Manage remote Windows harnesses (Pi coding agent) with DSH's built-in agent-team",
+  "type": "module",
+  "license": "MIT",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "cordis.patch.yml",
+    "src/",
+    "presets/",
+    "remote-agent/",
+    "locale/",
+    "scripts/",
+    "icon.svg",
+    "README.md",
+    "README.zh.md"
+  ],
+  "dsh": {
+    "manifestVersion": 1,
+    "bundle": { "patch": "./cordis.patch.yml" },
+    "client": { "platform": "web" }
+  },
+  "engines": {
+    "node": "^22.19.0 || >=24.0.0",
+    "dsh": ">=0.2.1-rc.5"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/dsh-remote": "^0.2.1-rc.5",
+    "@deepseek-ai/dsh-remote-client": "^0.2.1-rc.5",
+    "@deepseek-ai/dsh-subagent-pi": "^0.2.1-rc.5"
+  },
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "check": "node scripts/check.mjs",
+    "integration": "node scripts/integration.mjs"
+  }
+}
