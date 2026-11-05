@@ -15,6 +15,7 @@
 | [`dsh-remote-team/`](./dsh-remote-team/) | 插件本体，可单独 `dsh plugin add`；含双语 README、被控端安装脚本与测试 |
 | [`实现方案.md`](./实现方案.md) | 设计文档 v1.1：源码盘点、7 项决策、架构分层、实施阶段与状态记录 |
 | `.gitignore` | 排除本地会话数据、依赖，以及运行期生成的 CA 私钥 / 证书 / token / 任务日志 |
+| [`LICENSE`](./LICENSE) | MIT 许可；`dsh-remote-team/` 内另有一份，便于插件单独分发 |
 
 ## 核心能力
 
@@ -85,4 +86,4 @@ npm run integration   # 13/13，真实 Cordis Context + ToolRuntime 装载
 - 被控端实际执行 `install.ps1`（此前只做过 PowerShell AST 语法解析）。
 - P4 凭据轮换与实时看板、P5 产物回传与 Pi RPC 双向桥。
 
-许可：MIT（见 `dsh-remote-team/package.json`）。
+许可：[MIT](./LICENSE)（插件目录内另附一份，便于单独分发）。
